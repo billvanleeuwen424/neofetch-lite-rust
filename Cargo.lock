@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "neofetch-clone"
+name = "neofetch_clone"
 version = "0.1.0"
