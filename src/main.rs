@@ -33,15 +33,26 @@ fn get_cpu_info(cpu_name: &mut Option<String>, cores: &mut Option<String>) {
     let proc_file = File::open("/proc/cpuinfo").unwrap();
     let reader = BufReader::new(proc_file);
 
+    let mut model_name_found: bool = false;
+    let mut cpu_cores_found: bool = false;
+
     for line in reader.lines() {
         let line = line.unwrap();
 
-        if line.contains("model name") {
+        if !model_name_found && line.contains("model name") {
             store_proc_cpuinfo(cpu_name, &line);
-        } else if line.contains("cpu cores") {
+            model_name_found = true;
+        } else if !cpu_cores_found && line.contains("cpu cores") {
             store_proc_cpuinfo(cores, &line);
+            cpu_cores_found = true;
+        }
+
+        if cpu_cores_found && model_name_found {
+            break;
         }
     }
+
+    return;
 }
 
 fn main() {
