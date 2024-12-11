@@ -1,3 +1,4 @@
+use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -5,6 +6,7 @@ use std::io::{BufRead, BufReader};
 struct SystemInfo {
     cpu: Option<String>,
     cores: Option<String>,
+    frequency: Option<i32>,
 }
 
 impl SystemInfo {
@@ -12,6 +14,7 @@ impl SystemInfo {
         SystemInfo {
             cpu: None,
             cores: None,
+            frequency: None,
         }
     }
 }
@@ -47,11 +50,17 @@ fn get_cpu_info(cpu_name: &mut Option<String>, cores: &mut Option<String>) {
             cpu_cores_found = true;
         }
 
+        // break out so we dont waste time looking
         if cpu_cores_found && model_name_found {
             break;
         }
     }
 
+    let cpu_freq_file_as_string =
+        fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/bios_limit").unwrap();
+
+    let cpu_freq_as_int: u32 = cpu_freq_file_as_string.trim().parse().unwrap();
+    println!("{cpu_freq_as_int:?}");
     return;
 }
 
@@ -59,5 +68,6 @@ fn main() {
     let mut sys_info = SystemInfo::new();
 
     get_cpu_info(&mut sys_info.cpu, &mut sys_info.cores);
+
     println!("{:?}", sys_info);
 }
