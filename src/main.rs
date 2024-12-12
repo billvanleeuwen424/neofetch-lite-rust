@@ -6,7 +6,7 @@ use std::io::{BufRead, BufReader};
 struct SystemInfo {
     cpu: Option<String>,
     cores: Option<String>,
-    frequency: Option<i32>,
+    cpu_frequency_in_hz: Option<u32>,
 }
 
 impl SystemInfo {
@@ -14,7 +14,7 @@ impl SystemInfo {
         SystemInfo {
             cpu: None,
             cores: None,
-            frequency: None,
+            cpu_frequency_in_hz: None,
         }
     }
 }
@@ -31,8 +31,16 @@ fn store_proc_cpuinfo(pointer: &mut Option<String>, line: &String) {
     }
 }
 
-// gather the cpu info from /proc/cpuinfo
-fn get_cpu_info(cpu_name: &mut Option<String>, cores: &mut Option<String>) {
+/// gather the cpu info from /proc/cpuinfo
+/// and from /sys/devices/system/cpu/cpu0/cpufreq/bios_limit
+///
+/// cpuinfo gives cpu_name and how many cores
+/// cpufreq gives the frequency in hz
+fn get_cpu_info(
+    cpu_name: &mut Option<String>,
+    cores: &mut Option<String>,
+    cpu_freq_in_hz: &mut Option<u32>,
+) {
     let proc_file = File::open("/proc/cpuinfo").unwrap();
     let reader = BufReader::new(proc_file);
 
@@ -59,15 +67,18 @@ fn get_cpu_info(cpu_name: &mut Option<String>, cores: &mut Option<String>) {
     let cpu_freq_file_as_string =
         fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/bios_limit").unwrap();
 
-    let cpu_freq_as_int: u32 = cpu_freq_file_as_string.trim().parse().unwrap();
-    println!("{cpu_freq_as_int:?}");
-    return;
+    // get the string, trim and parse it into a u32
+    *cpu_freq_in_hz = Some(cpu_freq_file_as_string.trim().parse::<u32>().unwrap());
 }
 
 fn main() {
     let mut sys_info = SystemInfo::new();
 
-    get_cpu_info(&mut sys_info.cpu, &mut sys_info.cores);
+    get_cpu_info(
+        &mut sys_info.cpu,
+        &mut sys_info.cores,
+        &mut sys_info.cpu_frequency_in_hz,
+    );
 
     println!("{:?}", sys_info);
 }
