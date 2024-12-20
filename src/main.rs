@@ -1,12 +1,16 @@
+use regex::Regex;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::process::Command;
 
 #[derive(Debug)]
 struct SystemInfo {
     cpu: Option<String>,
     cores: Option<String>,
     cpu_frequency_in_hz: Option<u32>,
+
+    gpu: Option<String>,
 }
 
 impl SystemInfo {
@@ -15,6 +19,7 @@ impl SystemInfo {
             cpu: None,
             cores: None,
             cpu_frequency_in_hz: None,
+            gpu: None,
         }
     }
 }
@@ -71,6 +76,33 @@ fn get_cpu_info(
     *cpu_freq_in_hz = Some(cpu_freq_file_as_string.trim().parse::<u32>().unwrap());
 }
 
+/// gets the GPU info using 'lspci' and formats it, places data string into 'gpu'
+fn get_gpu_info(gpu: &mut Option<String>) {
+    // send bash command lspci and get output
+    let bash_command_process = Command::new("lspci").output();
+
+    match bash_command_process {
+        Ok(output) => {
+            let command_output = String::from_utf8_lossy(&output.stdout);
+
+            for line in command_output.lines() {
+                if line.contains("VGA compatible controller") {
+                    let between_brackets_regex = Regex::new(r"\[([^\]]+)\]").unwrap();
+
+                    // if there is a match in the line, get the string out of the Some(Match<>)
+                    if let Some(captures) = between_brackets_regex.captures(line) {
+                        *gpu = Some(captures.get(1).map_or("", |m| m.as_str()).to_string());
+                    }
+                }
+            }
+        }
+
+        Err(e) => {
+            panic!("Couldnt execute 'lspci': {}", e);
+        }
+    }
+}
+
 fn main() {
     let mut sys_info = SystemInfo::new();
 
@@ -79,6 +111,8 @@ fn main() {
         &mut sys_info.cores,
         &mut sys_info.cpu_frequency_in_hz,
     );
+
+    get_gpu_info(&mut sys_info.gpu);
 
     println!("{:?}", sys_info);
 }
