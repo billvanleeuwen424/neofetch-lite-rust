@@ -6,6 +6,8 @@ use std::process::Command;
 
 #[derive(Debug)]
 struct SystemInfo {
+    kernel: Option<String>,
+
     cpu: Option<String>,
     cores: Option<String>,
     cpu_frequency_in_hz: Option<u32>,
@@ -16,6 +18,7 @@ struct SystemInfo {
 impl SystemInfo {
     fn new() -> Self {
         SystemInfo {
+            kernel: None,
             cpu: None,
             cores: None,
             cpu_frequency_in_hz: None,
@@ -78,30 +81,38 @@ fn get_cpu_info(
 
 /// gets the GPU info using 'lspci' and formats it, places data string into 'gpu'
 fn get_gpu_info(gpu: &mut Option<String>) {
-    // send bash command lspci and get output
-    let bash_command_process = Command::new("lspci").output();
+    let command_output = send_bash_command("lspci");
 
-    match bash_command_process {
-        Ok(output) => {
-            let command_output = String::from_utf8_lossy(&output.stdout);
+    for line in command_output.lines() {
+        if line.contains("VGA compatible controller") {
+            let between_brackets_regex = Regex::new(r"\[([^\]]+)\]").unwrap();
 
-            for line in command_output.lines() {
-                if line.contains("VGA compatible controller") {
-                    let between_brackets_regex = Regex::new(r"\[([^\]]+)\]").unwrap();
-
-                    // if there is a match in the line, get the string out of the Some(Match<>)
-                    if let Some(captures) = between_brackets_regex.captures(line) {
-                        *gpu = Some(captures.get(1).map_or("", |m| m.as_str()).to_string());
-                    }
-                }
+            // if there is a match in the line, get the string out of the Some(Match<>)
+            if let Some(captures) = between_brackets_regex.captures(line) {
+                *gpu = Some(captures.get(1).map_or("", |m| m.as_str()).to_string());
             }
-        }
-
-        Err(e) => {
-            panic!("Couldnt execute 'lspci': {}", e);
         }
     }
 }
+
+/// will execute the bash command passed in,
+/// if failed will panic and print error message
+fn send_bash_command(command: &str) -> String {
+    let bash_command_process = Command::new(command).output();
+
+    match bash_command_process {
+        Ok(output) => {
+            return String::from_utf8_lossy(&output.stdout).to_string();
+        }
+
+        Err(e) => {
+            panic!("Couldnt execute '{}': {}", command, e);
+        }
+    }
+}
+
+/// get kernel info using 'uname'
+fn get_kernel_info(kernel: &mut Option<String>) {}
 
 fn main() {
     let mut sys_info = SystemInfo::new();
@@ -113,6 +124,8 @@ fn main() {
     );
 
     get_gpu_info(&mut sys_info.gpu);
+
+    get_kernel_info(&mut sys_info.kernel);
 
     println!("{:?}", sys_info);
 }
