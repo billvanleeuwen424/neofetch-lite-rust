@@ -111,8 +111,27 @@ fn send_bash_command(command: &str) -> String {
     }
 }
 
-/// get kernel info using 'uname'
-fn get_kernel_info(kernel: &mut Option<String>) {}
+/// Copy of bash_command_process, but takes params for the command
+/// will execute the bash command passed in with the parameters,
+/// if failed will panic and print error message
+fn send_bash_command_with_params(command: &str, parameters: &[&str]) -> String {
+    let bash_command_process = Command::new(command).args(parameters).output();
+
+    match bash_command_process {
+        Ok(output) => {
+            return String::from_utf8_lossy(&output.stdout).to_string();
+        }
+
+        Err(e) => {
+            panic!("Couldnt execute '{}': {}", command, e);
+        }
+    }
+}
+
+/// get kernel info using 'uname -r'
+fn get_kernel_info(kernel: &mut Option<String>) {
+    *kernel = Some(send_bash_command_with_params("uname", &["-r"]));
+}
 
 fn main() {
     let mut sys_info = SystemInfo::new();
