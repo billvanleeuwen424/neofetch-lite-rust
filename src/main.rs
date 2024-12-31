@@ -103,7 +103,7 @@ fn send_bash_command(command: &str) -> String {
     let bash_command_process = Command::new(command).output();
 
     let result_string = match bash_command_process {
-        Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
 
         Err(e) => {
             panic!("Couldnt execute '{}': {}", command, e);
@@ -120,7 +120,7 @@ fn send_bash_command_with_params(command: &str, parameters: &[&str]) -> String {
     let bash_command_process = Command::new(command).args(parameters).output();
 
     let result_string = match bash_command_process {
-        Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
 
         Err(e) => {
             panic!("Couldnt execute '{}': {}", command, e);
