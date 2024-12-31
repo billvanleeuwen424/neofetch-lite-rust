@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -10,8 +11,6 @@ struct SystemInfo {
     kernel: Option<String>,
 
     cpu: Option<String>,
-    cores: Option<String>,
-    cpu_frequency_in_hz: Option<u32>,
 
     gpu: Option<String>,
 }
@@ -22,54 +21,43 @@ impl SystemInfo {
             os: None,
             kernel: None,
             cpu: None,
-            cores: None,
-            cpu_frequency_in_hz: None,
             gpu: None,
         }
     }
 }
 
 /// Gets the second item in the line after the ':' and trims it accordingly
-fn store_proc_cpuinfo(pointer: &mut Option<String>, line: &String) {
+fn store_proc_cpuinfo(pointer: &mut String, line: &String) {
     // split the string on the ':', get the second item
     let slices: Vec<&str> = line.split(":").collect();
 
     // get the string after the : if it exists
     // check that the vector is at least 2 long
     if slices.len() >= 2 {
-        *pointer = Some(String::from(slices[1].trim()));
+        *pointer = String::from(slices[1].trim());
     }
 }
 
 /// gather the cpu info from /proc/cpuinfo
 /// and from /sys/devices/system/cpu/cpu0/cpufreq/bios_limit
-///
-/// cpuinfo gives cpu_name and how many cores
-/// cpufreq gives the frequency in hz
-fn get_cpu_info(
-    cpu_name: &mut Option<String>,
-    cores: &mut Option<String>,
-    cpu_freq_in_hz: &mut Option<u32>,
-) {
+fn get_cpu_info(cpu: &mut Option<String>) {
     let proc_file = File::open("/proc/cpuinfo").unwrap();
     let reader = BufReader::new(proc_file);
 
-    let mut model_name_found: bool = false;
-    let mut cpu_cores_found: bool = false;
+    let mut model_name: String = Default::default();
+    let mut cpu_cores: String = Default::default();
 
     for line in reader.lines() {
         let line = line.unwrap();
 
-        if !model_name_found && line.contains("model name") {
-            store_proc_cpuinfo(cpu_name, &line);
-            model_name_found = true;
-        } else if !cpu_cores_found && line.contains("cpu cores") {
-            store_proc_cpuinfo(cores, &line);
-            cpu_cores_found = true;
+        if model_name == String::default() && line.contains("model name") {
+            store_proc_cpuinfo(&mut model_name, &line);
+        } else if cpu_cores == String::default() && line.contains("cpu cores") {
+            store_proc_cpuinfo(&mut cpu_cores, &line);
         }
 
         // break out so we dont waste time looking
-        if cpu_cores_found && model_name_found {
+        if cpu_cores != String::default() && model_name != String::default() {
             break;
         }
     }
@@ -78,7 +66,15 @@ fn get_cpu_info(
         fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/bios_limit").unwrap();
 
     // get the string, trim and parse it into a u32
-    *cpu_freq_in_hz = Some(cpu_freq_file_as_string.trim().parse::<u32>().unwrap());
+    let cpu_freq_in_khz: u32 = cpu_freq_file_as_string.trim().parse::<u32>().unwrap();
+    // change the hz into Ghz
+    let cpu_freq_in_ghz: f32 = cpu_freq_in_khz as f32 / f32::powf(10.0, 6.0);
+
+    // build the final string for the CPU information
+    *cpu = Some(format!(
+        "{} ({}) @ {:.3}GHz",
+        model_name, cpu_cores, cpu_freq_in_ghz,
+    ));
 }
 
 /// gets the GPU info using 'lspci' and formats it, places data string into 'gpu'
@@ -161,11 +157,7 @@ fn get_os(os: &mut Option<String>) {
 fn main() {
     let mut sys_info = SystemInfo::new();
 
-    get_cpu_info(
-        &mut sys_info.cpu,
-        &mut sys_info.cores,
-        &mut sys_info.cpu_frequency_in_hz,
-    );
+    get_cpu_info(&mut sys_info.cpu);
 
     get_gpu_info(&mut sys_info.gpu);
 
