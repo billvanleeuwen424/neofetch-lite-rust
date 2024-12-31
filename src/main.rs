@@ -6,6 +6,7 @@ use std::process::Command;
 
 #[derive(Debug)]
 struct SystemInfo {
+    os: Option<String>,
     kernel: Option<String>,
 
     cpu: Option<String>,
@@ -18,6 +19,7 @@ struct SystemInfo {
 impl SystemInfo {
     fn new() -> Self {
         SystemInfo {
+            os: None,
             kernel: None,
             cpu: None,
             cores: None,
@@ -100,15 +102,15 @@ fn get_gpu_info(gpu: &mut Option<String>) {
 fn send_bash_command(command: &str) -> String {
     let bash_command_process = Command::new(command).output();
 
-    match bash_command_process {
-        Ok(output) => {
-            return String::from_utf8_lossy(&output.stdout).to_string();
-        }
+    let result_string = match bash_command_process {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
 
         Err(e) => {
             panic!("Couldnt execute '{}': {}", command, e);
         }
-    }
+    };
+
+    result_string
 }
 
 /// Copy of bash_command_process, but takes params for the command
@@ -117,20 +119,43 @@ fn send_bash_command(command: &str) -> String {
 fn send_bash_command_with_params(command: &str, parameters: &[&str]) -> String {
     let bash_command_process = Command::new(command).args(parameters).output();
 
-    match bash_command_process {
-        Ok(output) => {
-            return String::from_utf8_lossy(&output.stdout).to_string();
-        }
+    let result_string = match bash_command_process {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
 
         Err(e) => {
             panic!("Couldnt execute '{}': {}", command, e);
         }
-    }
+    };
+
+    result_string
 }
 
 /// get kernel info using 'uname -r'
 fn get_kernel_info(kernel: &mut Option<String>) {
     *kernel = Some(send_bash_command_with_params("uname", &["-r"]));
+}
+
+/// gets the os info
+/// will panic on fail
+fn get_os(os: &mut Option<String>) {
+    let mut pretty_name_os: String = send_bash_command_with_params("cat", &["/etc/os-release"]);
+
+    pretty_name_os = pretty_name_os
+        .lines()
+        .find(|line| line.contains("PRETTY_NAME"))
+        .map(|line| line.to_string())
+        .unwrap();
+
+    let between_quotes_regex = Regex::new(r#""([^"]*)""#).unwrap();
+
+    // panic if cant get between quotes
+    let captures = between_quotes_regex.captures(&pretty_name_os).unwrap();
+
+    pretty_name_os = captures.get(1).map_or("", |m| m.as_str()).to_string();
+
+    let architechture = send_bash_command_with_params("uname", &["-m"]);
+
+    *os = Some(pretty_name_os + " " + &architechture);
 }
 
 fn main() {
@@ -145,6 +170,8 @@ fn main() {
     get_gpu_info(&mut sys_info.gpu);
 
     get_kernel_info(&mut sys_info.kernel);
+
+    get_os(&mut sys_info.os);
 
     println!("{:?}", sys_info);
 }
