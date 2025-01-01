@@ -1,5 +1,4 @@
 use regex::Regex;
-use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -13,6 +12,7 @@ struct SystemInfo {
     cpu: Option<String>,
     gpu: Option<String>,
     memory: Option<String>,
+    user_hostname: Option<String>,
 }
 
 impl SystemInfo {
@@ -24,6 +24,7 @@ impl SystemInfo {
             cpu: None,
             gpu: None,
             memory: None,
+            user_hostname: None,
         }
     }
 }
@@ -206,6 +207,14 @@ fn get_memory_usage(memory: &mut Option<String>) {
     ));
 }
 
+/// gets the user and hostname like 'bill@fedora'
+fn get_user_hostname(user_hostname: &mut Option<String>) {
+    let username = send_bash_command("whoami");
+    let hostname = send_bash_command("hostname");
+
+    *user_hostname = Some(username + "@" + &hostname);
+}
+
 fn main() {
     let mut sys_info = SystemInfo::new();
 
@@ -220,6 +229,8 @@ fn main() {
     get_uptime(&mut sys_info.uptime);
 
     get_memory_usage(&mut sys_info.memory);
+
+    get_user_hostname(&mut sys_info.user_hostname);
 
     println!("{:?}", sys_info);
 }
