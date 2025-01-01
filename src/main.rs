@@ -10,6 +10,8 @@ struct SystemInfo {
     os: Option<String>,
     kernel: Option<String>,
 
+    uptime: Option<String>,
+
     cpu: Option<String>,
 
     gpu: Option<String>,
@@ -20,6 +22,7 @@ impl SystemInfo {
         SystemInfo {
             os: None,
             kernel: None,
+            uptime: None,
             cpu: None,
             gpu: None,
         }
@@ -154,6 +157,18 @@ fn get_os(os: &mut Option<String>) {
     *os = Some(pretty_name_os + " " + &architechture);
 }
 
+// get the uptime of the system
+// returns something like "26 minutes"
+fn get_uptime(uptime: &mut Option<String>) {
+    // this will return something like this
+    // up 5 min
+    let raw_uptime = send_bash_command_with_params("uptime", &["-p"]);
+
+    let raw_uptime_without_up = &raw_uptime[3..];
+
+    *uptime = Some(raw_uptime_without_up.trim().to_string());
+}
+
 fn main() {
     let mut sys_info = SystemInfo::new();
 
@@ -164,6 +179,8 @@ fn main() {
     get_kernel_info(&mut sys_info.kernel);
 
     get_os(&mut sys_info.os);
+
+    get_uptime(&mut sys_info.uptime);
 
     println!("{:?}", sys_info);
 }
