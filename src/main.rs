@@ -9,12 +9,10 @@ use std::process::Command;
 struct SystemInfo {
     os: Option<String>,
     kernel: Option<String>,
-
     uptime: Option<String>,
-
     cpu: Option<String>,
-
     gpu: Option<String>,
+    memory: Option<String>,
 }
 
 impl SystemInfo {
@@ -25,12 +23,13 @@ impl SystemInfo {
             uptime: None,
             cpu: None,
             gpu: None,
+            memory: None,
         }
     }
 }
 
 /// Gets the second item in the line after the ':' and trims it accordingly
-fn store_proc_cpuinfo(pointer: &mut String, line: &String) {
+fn store_proc_info(pointer: &mut String, line: &String) {
     // split the string on the ':', get the second item
     let slices: Vec<&str> = line.split(":").collect();
 
@@ -54,9 +53,9 @@ fn get_cpu_info(cpu: &mut Option<String>) {
         let line = line.unwrap();
 
         if model_name == String::default() && line.contains("model name") {
-            store_proc_cpuinfo(&mut model_name, &line);
+            store_proc_info(&mut model_name, &line);
         } else if cpu_cores == String::default() && line.contains("cpu cores") {
-            store_proc_cpuinfo(&mut cpu_cores, &line);
+            store_proc_info(&mut cpu_cores, &line);
         }
 
         // break out so we dont waste time looking
@@ -169,6 +168,44 @@ fn get_uptime(uptime: &mut Option<String>) {
     *uptime = Some(raw_uptime_without_up.trim().to_string());
 }
 
+/// returns the 'usage' of the systems memory and prints it in MB
+/// not exact usage, grabbed from /proc/meminfo
+fn get_memory_usage(memory: &mut Option<String>) {
+    let proc_file = File::open("/proc/meminfo").unwrap();
+    let reader = BufReader::new(proc_file);
+
+    let mut mem_total: String = Default::default();
+    let mut mem_available: String = Default::default();
+
+    for line in reader.lines() {
+        let line = line.unwrap();
+
+        if mem_total == String::default() && line.contains("MemTotal") {
+            store_proc_info(&mut mem_total, &line);
+        } else if mem_available == String::default() && line.contains("MemAvailable") {
+            store_proc_info(&mut mem_available, &line);
+        }
+
+        // break out so we dont waste time looking
+        if mem_available != String::default() && mem_total != String::default() {
+            break;
+        }
+    }
+
+    // convert things to integer to grab the values
+    let mem_total_num: u32 = mem_total[..mem_total.len() - 3].parse().unwrap();
+    let mem_available_num: u32 = mem_available[..mem_available.len() - 3].parse().unwrap();
+
+    let mem_in_use_num: u32 = mem_total_num - mem_available_num;
+
+    // convert to MB and store
+    *memory = Some(format!(
+        "{} MB / {} MB",
+        (mem_in_use_num / 1000),
+        (mem_total_num / 1000)
+    ));
+}
+
 fn main() {
     let mut sys_info = SystemInfo::new();
 
@@ -181,6 +218,8 @@ fn main() {
     get_os(&mut sys_info.os);
 
     get_uptime(&mut sys_info.uptime);
+
+    get_memory_usage(&mut sys_info.memory);
 
     println!("{:?}", sys_info);
 }
