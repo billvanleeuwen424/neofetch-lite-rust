@@ -1,3 +1,4 @@
+use colored::Colorize;
 use regex::Regex;
 use std::fs;
 use std::fs::File;
@@ -219,25 +220,43 @@ fn main() {
     let mut sys_info = SystemInfo::new();
 
     get_cpu_info(&mut sys_info.cpu);
-
     get_gpu_info(&mut sys_info.gpu);
-
     get_kernel_info(&mut sys_info.kernel);
-
     get_os(&mut sys_info.os);
-
     get_uptime(&mut sys_info.uptime);
-
     get_memory_usage(&mut sys_info.memory);
-
     get_user_hostname(&mut sys_info.user_hostname);
 
-    println!("{}", sys_info.user_hostname.unwrap());
+    println!("{}", sys_info.user_hostname.unwrap().blue().bold());
     println!("---------------");
-    println!("OS: {}", sys_info.os.unwrap());
-    println!("Kernel: {}", sys_info.kernel.unwrap());
-    println!("Uptime: {}", sys_info.uptime.unwrap());
-    println!("CPU: {}", sys_info.cpu.unwrap());
-    println!("GPU: {}", sys_info.gpu.unwrap());
-    println!("Memory: {}", sys_info.memory.unwrap());
+    println!(
+        "{} {}",
+        "OS:".truecolor(56, 83, 120).bold(),
+        sys_info.os.unwrap()
+    );
+    println!(
+        "{} {}",
+        "Kernel:".truecolor(56, 83, 120).bold(),
+        sys_info.kernel.unwrap()
+    );
+    println!(
+        "{} {}",
+        "Uptime:".truecolor(56, 83, 120).bold(),
+        sys_info.uptime.unwrap()
+    );
+    println!(
+        "{} {}",
+        "CPU:".truecolor(56, 83, 120).bold(),
+        sys_info.cpu.unwrap()
+    );
+    println!(
+        "{} {}",
+        "GPU:".truecolor(56, 83, 120).bold(),
+        sys_info.gpu.unwrap()
+    );
+    println!(
+        "{} {}",
+        "Memory:".truecolor(56, 83, 120).bold(),
+        sys_info.memory.unwrap()
+    );
 }
