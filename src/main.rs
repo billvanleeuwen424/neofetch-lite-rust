@@ -232,5 +232,12 @@ fn main() {
 
     get_user_hostname(&mut sys_info.user_hostname);
 
-    println!("{:?}", sys_info);
+    println!("{}", sys_info.user_hostname.unwrap());
+    println!("---------------");
+    println!("OS: {}", sys_info.os.unwrap());
+    println!("Kernel: {}", sys_info.kernel.unwrap());
+    println!("Uptime: {}", sys_info.uptime.unwrap());
+    println!("CPU: {}", sys_info.cpu.unwrap());
+    println!("GPU: {}", sys_info.gpu.unwrap());
+    println!("Memory: {}", sys_info.memory.unwrap());
 }
