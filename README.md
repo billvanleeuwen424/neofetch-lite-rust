@@ -6,7 +6,7 @@ A 'lite' version of [neofetch](https://github.com/dylanaraps/neofetch). Just a t
 
 ## Description
 
-See my blog on this topic **(TO BE UPLOADED)**
+See [my blog](https://blog.billvanleeuwen.ca/exploring-rust-a-juniour-c-programmers-insight) on this topic.
 
 ### Dependencies
 
