@@ -2,7 +2,7 @@
 
 A 'lite' version of [neofetch](https://github.com/dylanaraps/neofetch). Just a toy personal exercise in Rust.
 
-![screenshot](https://github.com/user-attachments/assets/c1891f1b-7684-467c-8a71-2c21289312dd)
+![Screenshot](https://github.com/user-attachments/assets/a81ba9dd-b414-4cf2-ad7c-87cfa1534d0d)
 
 ## Description
 
