@@ -1,3 +1,30 @@
-this is for sure something you should never do in rust. There is no reason for all this type safety and error handling for such a scripty thing.
+# Neofetch-lite Rust Clone
 
-I could probably have written this in an afternoon with Python.
+A 'lite' version of [neofetch](https://github.com/dylanaraps/neofetch). Just a toy personal exercise in Rust.
+
+## Description
+
+See my blog on this topic **(TO BE UPLOADED)**
+
+### Dependencies
+
+Rust and Cargo installed
+
+### Installing
+
+Compile from source, run executable as you would any other project
+```bash
+git
+cd
+cargo build --release
+
+# do what you want here, but you could just
+cargo run
+# or take the executable and run it
+mv target/release/hello-webserver wherever/you/want
+./wherever/you/want/hello-webserver-rust
+```
+
+## License
+
+This project is licensed under the terms of the GNU GENERAL PUBLIC LICENSE. - see the LICENSE.md file for details
